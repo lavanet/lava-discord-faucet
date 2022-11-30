@@ -126,6 +126,10 @@ async def eval_transaction(session, ctx, transaction):
     await session.close()
 
 
+def main():
+    bot.run(TOKEN)
+
+
 @bot.event
 async def on_ready():
     logger.info('Logged in as user', extra={"user": bot.user})
@@ -214,4 +218,5 @@ async def request(ctx):
     await eval_transaction(session, ctx, transaction)
 
 
-bot.run(TOKEN)
+if __name__ == "__main__":
+    main()
