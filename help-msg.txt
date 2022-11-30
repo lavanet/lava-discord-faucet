@@ -1,15 +1,15 @@
 **List of available commands:**
 1. Request coins through the faucet
-`$request osmo1a5zxevtdwhy4ddj662rl8xqyqsnrdmv7007g32`
+`$request lava@1lj3rsayj4xtrhp2e3elv4nf7lazxty272zqegr`
 
 2. Displays the current status of the node where faucet is running
 `$faucet_status`
 
-3. Show faucet address
-`$faucet_address`
+3. Show tap address
+`$faucet_address` or `$tap_address`
 
 4. Show transaction information for a specific transaction ID
-`$tx_info 5C501EA776F66ADB6A5A3C13D876382FFE431A461E1AA7AD7A19D70C6B765A97`
+`$tx_info 009CEA347EAFD795E8B10088D18156BC15F24362416BEEF1073BFDFD936E19B0`
 
 5. Show address balance
-`$balance osmo1a5zxevtdwhy4ddj662rl8xqyqsnrdmv7007g32`
+`$balance lava@1lj3rsayj4xtrhp2e3elv4nf7lazxty272zqegr`
