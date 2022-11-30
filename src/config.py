@@ -8,7 +8,7 @@ load_dotenv()
 
 # Load config
 c = configparser.ConfigParser()
-c.read("config.ini")
+c.read("../config.ini")
 
 # Load data from config
 VERBOSE_MODE = str(c["DEFAULT"]["verbose"])

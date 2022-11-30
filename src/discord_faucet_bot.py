@@ -1,14 +1,13 @@
-import traceback
-from asyncio import sleep
-import aiofiles as aiof
-import aiohttp
-import discord
+import sys
 import logging
 import datetime
-import sys
-import cosmos_api as api
+import discord
+import aiohttp
+import aiofiles
 from discord.ext import commands
-from config import *
+from config import TOKEN, AMOUNT_TO_SEND, REQUEST_TIMEOUT, FAUCET_ADDRESS, \
+    FAUCET_EMOJI, REJECT_EMOJI, BECH32_HRP, EXPLORER_URL
+import cosmos_api as api
 
 # Turn Down Discord Logging
 disc_log = logging.getLogger('discord')
@@ -24,28 +23,38 @@ bot = commands.Bot(intents=intents,
                    command_prefix="$",
                    description='Funded by the community for the community')
 
-with open("help-msg.txt", "r", encoding="utf-8") as help_file:
+with open("../help-msg.txt", "r", encoding="utf-8") as help_file:
     help_msg = help_file.read()
 
 
 async def save_transaction_statistics(some_string: str):
-    # with open("transactions.csv", "a") as csv_file:
-    async with aiof.open("transactions.csv", "a") as csv_file:
+    """
+
+    :param some_string:
+    """
+    async with aiofiles.open("../transactions.csv", "a") as csv_file:
         await csv_file.write(f'{some_string}\n')
         await csv_file.flush()
 
 
-async def submit_tx_info(session, message, requester, txhash = ""):
+async def submit_tx_info(session: aiohttp.ClientSession, message, requester, txhash=""):
+    """
+
+    :param session:
+    :param message:
+    :param requester:
+    :param txhash:
+    """
     if message.content.startswith('$tx_info') and txhash == "":
         txhash = str(message.content).replace("$tx_info", "").replace(" ", "")
     try:
         if len(txhash) == 64:
             tx = await api.get_transaction_info(session, txhash)
-            logger.info(f"requested txhash {txhash} details")
+            logger.info("requested tx details", extra={tx: txhash})
 
-            if "amount" and "fee" in str(tx):
-                from_   = tx['tx']['body']['messages'][0]['from_address']
-                to_     = tx['tx']['body']['messages'][0]['to_address']
+            if "amount" in str(tx) and "fee" in str(tx):
+                from_ = tx['tx']['body']['messages'][0]['from_address']
+                to_ = tx['tx']['body']['messages'][0]['to_address']
                 amount_ = tx['tx']['body']['messages'][0]['amount'][0]['amount']
 
                 tx = f'🚀 - {requester}\n' \
@@ -64,8 +73,8 @@ async def submit_tx_info(session, message, requester, txhash = ""):
             await message.channel.send(f'Incorrect length for tx_hash: {len(txhash)} instead 64')
             await session.close()
 
-    except Exception as e:
-        logger.error(f"Can't get transaction info {traceback.format_exc()}")
+    except Exception:
+        logger.exception("Can't get transaction info")
         await message.channel.send(f"Can't get transaction info of your request {message.content}")
 
 
@@ -74,20 +83,23 @@ async def requester_basic_requirements(session, ctx, address, amount):
     if len(address) != faucet_address_length or address[:len(BECH32_HRP)] != BECH32_HRP:
         await ctx.send(
             f'{ctx.author.mention}, Invalid address format `{address}`\n'
-            f'Address length must be equal to {faucet_address_length} and the prefix must be `{BECH32_HRP}`'
+            f'Address length must be equal to {faucet_address_length}'
+            f' and the prefix must be `{BECH32_HRP}`'
         )
         return False
 
-    #check if requester holds already evmos
+    # check if requester holds already evmos
     requester_balance = float(await api.get_addr_balance(session, address))
     if requester_balance > float(amount):
         await ctx.send(
-            f'{REJECT_EMOJI} - {ctx.author.mention} \nYou already own {round(requester_balance,2)} ulava - please use your funds!'
+            f'{REJECT_EMOJI} - {ctx.author.mention} \n'
+            f'You already own {round(requester_balance, 2)}'
+            f' ulava - please use your funds!'
         )
         await session.close()
         return False
 
-    #check if faucet has enough balance
+    # check if faucet has enough balance
     faucet_balance = float(await api.get_addr_balance(session, FAUCET_ADDRESS))
     if faucet_balance < float(amount):
         await ctx.send(
@@ -99,15 +111,15 @@ async def requester_basic_requirements(session, ctx, address, amount):
 
 async def eval_transaction(session, ctx, transaction):
     if "'code': 0" in str(transaction) and "hash" in str(transaction):
-        await submit_tx_info(session, ctx.message, ctx.author.mention ,transaction["hash"])
+        await submit_tx_info(session, ctx.message, ctx.author.mention, transaction["hash"])
         logger.info("successfully send tx info to discord")
 
     else:
         await ctx.send(
-            f'{REJECT_EMOJI} - {ctx.author.mention}, Can\'t send transaction. Try making another request'
-            f'\n{transaction}'
+            f'{REJECT_EMOJI} - {ctx.author.mention}, Can\'t send transaction. '
+            f'Try making another request\n{transaction}'
         )
-        logger.error(f"Couldn't process tx {transaction}")
+        logger.error("Couldn't process tx", extra={transaction: transaction})
 
     now = datetime.datetime.now()
     await save_transaction_statistics(f'{transaction};{now.strftime("%Y-%m-%d %H:%M:%S")}')
@@ -116,7 +128,7 @@ async def eval_transaction(session, ctx, transaction):
 
 @bot.event
 async def on_ready():
-    logger.info(f'Logged in as {bot.user}')
+    logger.info('Logged in as user', extra={"user": bot.user})
 
 
 @bot.command(name='faucet_address')
@@ -129,8 +141,8 @@ async def faucet_address(ctx):
             f'`{FAUCET_ADDRESS}`\n \n'
         )
         await session.close()
-    except:
-        logging.error("Can't send message $faucet_address. Please report the incident to one of the mods.")
+    except Exception:
+        logging.exception("Can't send message $faucet_address. Please report the incident to one of the mods.")
 
 
 @bot.command(name='balance')
@@ -147,7 +159,8 @@ async def balance(ctx):
             await session.close()
 
         else:
-            await ctx.channel.send(f'{ctx.author.mention} your account is not initialized with evmos (balance is empty)')
+            await ctx.channel.send(
+                f'{ctx.author.mention} your account is not initialized with evmos (balance is empty)')
             await session.close()
 
 
@@ -161,7 +174,7 @@ async def info(ctx):
 @bot.command(name='faucet_status')
 async def status(ctx):
     session = aiohttp.ClientSession()
-    logger.info(f"status request by {ctx.author.name}")
+    logger.info("status request", extra={"by": ctx.author.name})
     try:
         s = await api.get_node_status(session)
         coins = await api.get_addr_all_balance(session, FAUCET_ADDRESS)
@@ -175,8 +188,8 @@ async def status(ctx):
                 f'Faucet balance:\n{api.coins_dict_to_string(coins, "")}```'
             await ctx.send(s)
             await session.close()
-    except Exception as statusErr:
-        logger.error(statusErr)
+    except Exception:
+        logger.exception("Exception occurred during faucet status request")
 
 
 @bot.command(name='tx_info')
@@ -185,18 +198,18 @@ async def tx_info(ctx):
     await submit_tx_info(session, ctx.message, ctx.author.mention)
 
 
-#@commands.cooldown(1, REQUEST_TIMEOUT, commands.BucketType.user)
+@commands.cooldown(1, REQUEST_TIMEOUT, commands.BucketType.user)
 @bot.command(name='request')
 async def request(ctx):
     session = aiohttp.ClientSession()
     requester_address = str(ctx.message.content).replace("$request", "").replace(" ", "").lower()
 
-    #do basic requirements
+    # do basic requirements
     basic_checks = await requester_basic_requirements(session, ctx, requester_address, AMOUNT_TO_SEND)
-    if basic_checks == False:
+    if not basic_checks:
         return
 
-    #send and evaluate tx
+    # send and evaluate tx
     transaction = await api.send_tx(session, recipient=requester_address, amount=AMOUNT_TO_SEND)
     await eval_transaction(session, ctx, transaction)
 
