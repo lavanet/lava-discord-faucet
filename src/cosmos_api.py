@@ -86,6 +86,7 @@ async def get_address_info(session, addr: str):
 
         info = await async_request(session, url=f'{REST_PROVIDER}/cosmos/auth/v1beta1/accounts/{addr}')
         acc_num = int(info['account']['account_number'])
+        logger.info(info['account']['account_number'])
         try:
             seq = int(info['account']['sequence']) or 0
 

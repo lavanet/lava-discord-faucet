@@ -23,8 +23,8 @@ bot = commands.Bot(intents=intents,
                    command_prefix="$",
                    description='Funded by the community for the community')
 
-with open("../help-msg.txt", "r", encoding="utf-8") as help_file:
-    help_msg = help_file.read()
+# with open("help-msg.txt", "r", encoding="utf-8") as help_file:
+#     help_msg = help_file.read()
 
 
 async def save_transaction_statistics(some_string: str):
@@ -76,6 +76,7 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, txh
     except Exception:
         logger.exception("Can't get transaction info")
         await message.channel.send(f"Can't get transaction info of your request {message.content}")
+        await session.close()
 
 
 async def requester_basic_requirements(session, ctx, address, amount):
@@ -86,9 +87,10 @@ async def requester_basic_requirements(session, ctx, address, amount):
             f'Address length must be equal to {faucet_address_length}'
             f' and the prefix must be `{BECH32_HRP}`'
         )
+        await session.close()
         return False
 
-    # check if requester holds already evmos
+    # check if requester holds already Lava
     requester_balance = float(await api.get_addr_balance(session, address))
     if requester_balance > float(amount):
         await ctx.send(
@@ -119,7 +121,8 @@ async def eval_transaction(session, ctx, transaction):
             f'{REJECT_EMOJI} - {ctx.author.mention}, Can\'t send transaction. '
             f'Try making another request\n{transaction}'
         )
-        logger.error("Couldn't process tx", extra={transaction: transaction})
+        # logger.error("Couldn't process tx", extra={transaction})
+        print("Couldn't process tx", transaction)
 
     now = datetime.datetime.now()
     await save_transaction_statistics(f'{transaction};{now.strftime("%Y-%m-%d %H:%M:%S")}')
@@ -147,6 +150,7 @@ async def faucet_address(ctx):
         await session.close()
     except Exception:
         logging.exception("Can't send message $faucet_address. Please report the incident to one of the mods.")
+        await session.close()
 
 
 @bot.command(name='balance')
@@ -164,7 +168,7 @@ async def balance(ctx):
 
         else:
             await ctx.channel.send(
-                f'{ctx.author.mention} your account is not initialized with evmos (balance is empty)')
+                f'{ctx.author.mention} your account is not initialized with Lava (balance is empty)')
             await session.close()
 
 
@@ -194,6 +198,7 @@ async def status(ctx):
             await session.close()
     except Exception:
         logger.exception("Exception occurred during faucet status request")
+        await session.close()
 
 
 @bot.command(name='tx_info')
@@ -202,7 +207,7 @@ async def tx_info(ctx):
     await submit_tx_info(session, ctx.message, ctx.author.mention)
 
 
-@commands.cooldown(1, REQUEST_TIMEOUT, commands.BucketType.user)
+# @commands.cooldown(1, REQUEST_TIMEOUT, commands.BucketType.user)
 @bot.command(name='request')
 async def request(ctx):
     session = aiohttp.ClientSession()
@@ -210,11 +215,13 @@ async def request(ctx):
 
     # do basic requirements
     basic_checks = await requester_basic_requirements(session, ctx, requester_address, AMOUNT_TO_SEND)
-    if not basic_checks:
-        return
+    # if not basic_checks:
+    #     await session.close()
+    #     return
 
     # send and evaluate tx
     transaction = await api.send_tx(session, recipient=requester_address, amount=AMOUNT_TO_SEND)
+    logger.info(transaction)
     await eval_transaction(session, ctx, transaction)
 
 
