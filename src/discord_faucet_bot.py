@@ -56,7 +56,7 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, tra
         await session.close()
 
     if transaction["code"] == TRANSACTION_CODE_OK:
-        await message.channel.send(f'🚀 - Transaction created: {txhash}')
+        await message.channel.send(f'🚀 - Transaction was created: {txhash}')
     elif transaction["code"] == TRANSACTION_CODE_IN_MEMPOOL_CACHE:
         await message.channel.send(f'🚀 - Transaction was already in mempool cache: {txhash}')
 
