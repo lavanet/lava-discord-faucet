@@ -7,7 +7,7 @@ from tabulate import tabulate
 from mospy import Transaction, Account
 from mospy.clients import HTTPClient
 from config import VERBOSE_MODE, REST_PROVIDER, FAUCET_SEED, MAIN_DENOM, RPC_PROVIDER, GAS_LIMIT, CHAIN_ID, GAS_PRICE, \
-    FAUCET_ADDRESS, DECIMAL
+    FAUCET_ADDRESS, DECIMAL, BLOCK_TIME_SECONDS
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -116,8 +116,9 @@ async def get_transaction_info(session: aiohttp.ClientSession, trans_id_hex: str
     :param trans_id_hex:
     :return:
     """
-    time.sleep(6)
+    time.sleep(BLOCK_TIME_SECONDS)
     url = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs/{trans_id_hex}'
+
     resp = await async_request(session, url=url)
     return resp
 
@@ -136,7 +137,7 @@ async def send_tx(session: aiohttp.ClientSession, recipient: str, amount: int) -
         transaction = Transaction(
             account=faucet_account,
             gas=GAS_LIMIT,
-            memo="The first faucet tx!",
+            memo=f"Faucet transfer at {time.time()}",
             chain_id=CHAIN_ID,
         )
 

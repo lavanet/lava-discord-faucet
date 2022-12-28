@@ -10,6 +10,8 @@ from config import TOKEN, AMOUNT_TO_SEND, REQUEST_TIMEOUT, FAUCET_ADDRESS, \
 import cosmos_api as api
 
 # Turn Down Discord Logging
+from consts import TRANSACTION_CODE_OK, TRANSACTION_CODE_IN_MEMPOOL_CACHE
+
 disc_log = logging.getLogger('discord')
 disc_log.setLevel(logging.CRITICAL)
 
@@ -37,41 +39,47 @@ async def save_transaction_statistics(some_string: str):
         await csv_file.flush()
 
 
-async def submit_tx_info(session: aiohttp.ClientSession, message, requester, txhash=""):
+async def submit_tx_info(session: aiohttp.ClientSession, message, requester, transaction=None):
     """
 
     :param session:
     :param message:
     :param requester:
-    :param txhash:
+    :param transaction: optional
     """
+    txhash = transaction["hash"] if transaction else ""
     if message.content.startswith('$tx_info') and txhash == "":
         txhash = str(message.content).replace("$tx_info", "").replace(" ", "")
+
+    if not txhash:
+        await message.channel.send(f"Can't get transaction info of your request {message.content}")
+
+    if transaction["code"] == TRANSACTION_CODE_OK:
+        await message.channel.send(f'🚀 - Transaction created: {txhash}')
+    elif transaction["code"] == TRANSACTION_CODE_IN_MEMPOOL_CACHE:
+        await message.channel.send(f'🚀 - Transaction was already in mempool cache: {txhash}')
+
     try:
-        if len(txhash) == 64:
-            tx = await api.get_transaction_info(session, txhash)
-            logger.info("requested tx details", extra={tx: txhash})
+        tx = await api.get_transaction_info(session, txhash)
 
-            if "amount" in str(tx) and "fee" in str(tx):
-                from_ = tx['tx']['body']['messages'][0]['from_address']
-                to_ = tx['tx']['body']['messages'][0]['to_address']
-                amount_ = tx['tx']['body']['messages'][0]['amount'][0]['amount']
+        if "amount" in str(tx) and "fee" in str(tx):
+            from_ = tx['tx']['body']['messages'][0]['from_address']
+            to_ = tx['tx']['body']['messages'][0]['to_address']
+            amount_ = tx['tx']['body']['messages'][0]['amount'][0]['amount']
 
-                tx = f'🚀 - {requester}\n' \
-                     f'{amount_} ulava successfully transfered to {to_}' \
-                     '```' \
-                     f'From:         {from_}\n' \
-                     f'To (BECH32):  {to_}\n' \
-                     f'Amount:       {amount_} ulava ```' \
-                     f'{EXPLORER_URL}/txs/{txhash}'
-                await message.channel.send(tx)
-                await session.close()
-            else:
-                await message.channel.send(f'{requester}, `{tx}`')
-                await session.close()
-        else:
-            await message.channel.send(f'Incorrect length for tx_hash: {len(txhash)} instead 64')
+            tx = f'🚀 - {requester}\n' \
+                 f'{amount_} ulava successfully transfered to {to_}' \
+                 '```' \
+                 f'From:         {from_}\n' \
+                 f'To (BECH32):  {to_}\n' \
+                 f'Amount:       {amount_} ulava ```' \
+                 f'{EXPLORER_URL}/txs/{txhash}'
+            await message.channel.send(tx)
             await session.close()
+        else:
+            await message.channel.send(f'{requester}, `{tx}`')
+            await session.close()
+
 
     except Exception:
         logger.exception("Can't get transaction info")
@@ -108,12 +116,14 @@ async def requester_basic_requirements(session, ctx, address, amount):
         await session.close()
         return False
 
+    return True
+
 
 async def eval_transaction(session, ctx, transaction):
-    if "'code': 0" in str(transaction) and "hash" in str(transaction):
-        await submit_tx_info(session, ctx.message, ctx.author.mention, transaction["hash"])
-        logger.info("successfully send tx info to discord")
 
+    if transaction["code"] in (TRANSACTION_CODE_OK, TRANSACTION_CODE_IN_MEMPOOL_CACHE):
+        await submit_tx_info(session, ctx.message, ctx.author.mention, transaction)
+        logger.info("successfully send tx info to discord")
     else:
         await ctx.send(
             f'{REJECT_EMOJI} - {ctx.author.mention}, Can\'t send transaction. '
@@ -202,19 +212,22 @@ async def tx_info(ctx):
     await submit_tx_info(session, ctx.message, ctx.author.mention)
 
 
-@commands.cooldown(1, REQUEST_TIMEOUT, commands.BucketType.user)
+#@commands.cooldown(1, REQUEST_TIMEOUT, commands.BucketType.user)
 @bot.command(name='request')
 async def request(ctx):
+    logger.info("Request command start")
     session = aiohttp.ClientSession()
     requester_address = str(ctx.message.content).replace("$request", "").replace(" ", "").lower()
-
+    logger.info(f"requester_address ${requester_address}")
     # do basic requirements
     basic_checks = await requester_basic_requirements(session, ctx, requester_address, AMOUNT_TO_SEND)
     if not basic_checks:
+        logger.info("Basic checks failed")
         return
 
     # send and evaluate tx
     transaction = await api.send_tx(session, recipient=requester_address, amount=AMOUNT_TO_SEND)
+
     await eval_transaction(session, ctx, transaction)
 
 

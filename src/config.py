@@ -18,6 +18,9 @@ GAS_PRICE = int(os.getenv("TX_GAS_PRICE"))
 GAS_LIMIT = int(os.getenv("TX_GAS_LIMIT"))
 FAUCET_PRIVKEY = str(os.getenv("FAUCET_PRIVATE_KEY"))
 FAUCET_SEED = str(os.getenv("FAUCET_SEED"))
+BLOCK_TIME_SECONDS = int(os.getenv("BLOCK_TIME_SECONDS"))
+
+
 
 if FAUCET_PRIVKEY is None:
     FAUCET_PRIVKEY = str(seed_to_privkey(FAUCET_SEED).hex())
