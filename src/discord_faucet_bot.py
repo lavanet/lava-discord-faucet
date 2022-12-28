@@ -54,6 +54,7 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, tra
     if not txhash or len(txhash) != 64:
         await message.channel.send(f'Incorrect length for tx_hash: {len(txhash)} instead 64')
         await session.close()
+        return False
 
     if transaction["code"] == TRANSACTION_CODE_OK:
         await message.channel.send(f'🚀 - Transaction was created: {txhash}')
@@ -80,7 +81,6 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, tra
         else:
             await message.channel.send(f'{requester}, `{tx}`')
             await session.close()
-
 
     except Exception:
         logger.exception("Can't get transaction info")
