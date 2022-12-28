@@ -26,7 +26,7 @@ if FAUCET_PRIVKEY is None:
 FAUCET_ADDRESS = str(os.getenv("FAUCET_ADDRESS"))
 EXPLORER_URL = str(os.getenv("OPTIONAL_EXPLORER_URL"))
 if EXPLORER_URL != "":
-    EXPLORER_URL = f'{EXPLORER_URL}/transactions/'
+    EXPLORER_URL = f'{EXPLORER_URL}/transactions'
 
 DENOMINATION_LST = os.getenv("TX_DENOMINATION_LIST").split(",")
 AMOUNT_TO_SEND = os.getenv("TX_AMOUNT_TO_SEND")
