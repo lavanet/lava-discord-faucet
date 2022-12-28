@@ -51,8 +51,9 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, tra
     if message.content.startswith('$tx_info') and txhash == "":
         txhash = str(message.content).replace("$tx_info", "").replace(" ", "")
 
-    if not txhash:
-        await message.channel.send(f"Can't get transaction info of your request {message.content}")
+    if not txhash or len(txhash) != 64:
+        await message.channel.send(f'Incorrect length for tx_hash: {len(txhash)} instead 64')
+        await session.close()
 
     if transaction["code"] == TRANSACTION_CODE_OK:
         await message.channel.send(f'🚀 - Transaction created: {txhash}')
@@ -218,7 +219,6 @@ async def request(ctx):
     logger.info("Request command start")
     session = aiohttp.ClientSession()
     requester_address = str(ctx.message.content).replace("$request", "").replace(" ", "").lower()
-    logger.info(f"requester_address ${requester_address}")
     # do basic requirements
     basic_checks = await requester_basic_requirements(session, ctx, requester_address, AMOUNT_TO_SEND)
     if not basic_checks:
