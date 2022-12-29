@@ -109,14 +109,15 @@ async def get_node_status(session: aiohttp.ClientSession):
     return await async_request(session, url=url)
 
 
-async def get_transaction_info(session: aiohttp.ClientSession, trans_id_hex: str):
+async def get_transaction_info(session: aiohttp.ClientSession, trans_id_hex: str, wait=BLOCK_TIME_SECONDS):
     """
 
+    :param wait:
     :param session:
     :param trans_id_hex:
     :return:
     """
-    time.sleep(BLOCK_TIME_SECONDS)
+    time.sleep(wait)
     url = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs/{trans_id_hex}'
 
     resp = await async_request(session, url=url)

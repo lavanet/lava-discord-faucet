@@ -6,7 +6,7 @@ import aiohttp
 import aiofiles
 from discord.ext import commands
 from config import TOKEN, AMOUNT_TO_SEND, REQUEST_TIMEOUT, FAUCET_ADDRESS, \
-    FAUCET_EMOJI, REJECT_EMOJI, BECH32_HRP, EXPLORER_URL
+    FAUCET_EMOJI, REJECT_EMOJI, BECH32_HRP, EXPLORER_URL, BLOCK_TIME_SECONDS
 import cosmos_api as api
 
 # Turn Down Discord Logging
@@ -25,8 +25,8 @@ bot = commands.Bot(intents=intents,
                    command_prefix="$",
                    description='Funded by the community for the community')
 
-# with open("../help-msg.txt", "r", encoding="utf-8") as help_file:
-#     help_msg = help_file.read()
+with open("help-msg.txt", "r", encoding="utf-8") as help_file:
+    help_msg = help_file.read()
 
 
 async def save_transaction_statistics(some_string: str):
@@ -48,21 +48,24 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, tra
     :param transaction: optional
     """
     txhash = transaction["hash"] if transaction else ""
+    wait = BLOCK_TIME_SECONDS
     if message.content.startswith('$tx_info') and txhash == "":
         txhash = str(message.content).replace("$tx_info", "").replace(" ", "")
+        wait = 0
 
     if not txhash or len(txhash) != 64:
         await message.channel.send(f'Incorrect length for tx_hash: {len(txhash)} instead 64')
         await session.close()
         return False
 
-    if transaction["code"] == TRANSACTION_CODE_OK:
-        await message.channel.send(f'🚀 - Transaction was created: {txhash}')
-    elif transaction["code"] == TRANSACTION_CODE_IN_MEMPOOL_CACHE:
-        await message.channel.send(f'🚀 - Transaction was already in mempool cache: {txhash}')
+    if transaction:
+        if transaction["code"] == TRANSACTION_CODE_OK:
+            await message.channel.send(f'🚀 - Transaction was created: {txhash}')
+        elif transaction["code"] == TRANSACTION_CODE_IN_MEMPOOL_CACHE:
+            await message.channel.send(f'🚀 - Transaction was already in mempool cache: {txhash}')
 
     try:
-        tx = await api.get_transaction_info(session, txhash)
+        tx = await api.get_transaction_info(session, txhash, wait)
 
         if "amount" in str(tx) and "fee" in str(tx):
             from_ = tx['tx']['body']['messages'][0]['from_address']
