@@ -16,8 +16,8 @@ CHAIN_ID = str(os.getenv("CHAIN_ID"))
 BECH32_HRP = str(os.getenv("CHAIN_BECH32_HRP"))
 GAS_PRICE = int(os.getenv("TX_GAS_PRICE"))
 GAS_LIMIT = int(os.getenv("TX_GAS_LIMIT"))
-FAUCET_PRIVKEY = str(os.getenv("FAUCET_PRIVATE_KEY"))
-FAUCET_SEED = str(os.getenv("FAUCET_SEED"))
+FAUCET_PRIVKEY = os.getenv("FAUCET_PRIVATE_KEY", None)
+FAUCET_SEED = os.getenv("FAUCET_SEED", None)
 BLOCK_TIME_SECONDS = int(os.getenv("BLOCK_TIME_SECONDS"))
 
 if FAUCET_PRIVKEY is None:
