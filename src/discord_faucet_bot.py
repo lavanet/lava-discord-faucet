@@ -134,7 +134,7 @@ async def eval_transaction(session, ctx, transaction):
             f'{REJECT_EMOJI} - {ctx.author.mention}, Can\'t send transaction. '
             f'Try making another request\n{transaction}'
         )
-        logger.error("Couldn't process tx", extra={transaction: transaction})
+        logger.error(f"Couldn't process tx {transaction}")
 
     now = datetime.datetime.now()
     await save_transaction_statistics(f'{transaction};{now.strftime("%Y-%m-%d %H:%M:%S")}')
@@ -169,6 +169,17 @@ async def faucet_address(ctx):
 async def balance(ctx):
     session = aiohttp.ClientSession()
     address = str(ctx.message.content).replace("$balance", "").replace(" ", "").lower()
+
+    if not address:
+        await ctx.channel.send("Please specify an address")
+        await ctx.channel.close()
+        return
+
+    if address[:len(BECH32_HRP)] != BECH32_HRP:
+        await ctx.channel.send("Please specify a valid address")
+        await ctx.channel.close()
+        return
+
     if address[:len(BECH32_HRP)] == BECH32_HRP:
         coins = await api.get_addr_balance(session, address)
         if float(coins) > 0:
@@ -216,10 +227,22 @@ async def status(ctx):
 @bot.command(name='tx_info')
 async def tx_info(ctx):
     session = aiohttp.ClientSession()
+    txhash = str(ctx.message.content).replace("$tx_info", "").replace(" ", "")
+
+    if not txhash:
+        await ctx.send("Please specify a transaction hash")
+        await session.close()
+        return
+
+    if not txhash or len(txhash) != 64:
+        await ctx.send(f'Incorrect length for tx_hash: {len(txhash)} instead 64')
+        await session.close()
+        return
+
     await submit_tx_info(session, ctx.message, ctx.author.mention)
 
 
-#@commands.cooldown(1, REQUEST_TIMEOUT, commands.BucketType.user)
+#@commands.cooldown(2, REQUEST_TIMEOUT, commands.BucketType.user)
 @bot.command(name='request')
 async def request(ctx):
     logger.info("Request command start")
@@ -228,7 +251,7 @@ async def request(ctx):
     # do basic requirements
     basic_checks = await requester_basic_requirements(session, ctx, requester_address, AMOUNT_TO_SEND)
     if not basic_checks:
-        logger.info("Basic checks failed")
+        logger.warning("Basic checks failed")
         return
 
     # send and evaluate tx

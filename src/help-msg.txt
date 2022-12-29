@@ -5,11 +5,14 @@
 2. Displays the current status of the node where faucet is running
 `$faucet_status`
 
-3. Show tap address
-`$faucet_address` or `$tap_address`
-
-4. Show transaction information for a specific transaction ID
+3. Show transaction information for a specific transaction ID
 `$tx_info 009CEA347EAFD795E8B10088D18156BC15F24362416BEEF1073BFDFD936E19B0`
 
-5. Show address balance
+4. Show address balance
 `$balance lava@1lj3rsayj4xtrhp2e3elv4nf7lazxty272zqegr`
+
+5. Display faucet address
+`$faucet_address`
+
+6. Show this info
+`$info`

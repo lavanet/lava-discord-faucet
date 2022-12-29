@@ -12,11 +12,18 @@ from config import VERBOSE_MODE, REST_PROVIDER, FAUCET_SEED, MAIN_DENOM, RPC_PRO
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-faucet_account = Account(
-    private_key=FAUCET_PRIVKEY,
-    hrp="lava@",
-    eth=False,
-)
+if FAUCET_SEED:
+    faucet_account = Account(
+        seed_phrase=FAUCET_SEED,
+        hrp="lava@",
+        eth=False,
+    )
+else:
+    faucet_account = Account(
+        private_key=FAUCET_PRIVKEY,
+        hrp="lava@",
+        eth=False,
+    )
 
 
 def coins_dict_to_string(coins: dict, table_fmt_: str = "") -> str:
@@ -138,7 +145,7 @@ async def send_tx(session: aiohttp.ClientSession, recipient: str, amount: int) -
         transaction = Transaction(
             account=faucet_account,
             gas=GAS_LIMIT,
-            memo=f"Faucet transfer at {time.time()}",
+            memo=f"Faucet transfer {time.time()}",
             chain_id=CHAIN_ID,
         )
 
