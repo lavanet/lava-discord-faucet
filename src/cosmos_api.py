@@ -12,11 +12,18 @@ from config import VERBOSE_MODE, REST_PROVIDER, FAUCET_SEED, MAIN_DENOM, RPC_PRO
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-faucet_account = Account(
-    private_key=FAUCET_PRIVKEY,
-    hrp="lava@",
-    eth=False,
-)
+if FAUCET_SEED:
+    faucet_account = Account(
+        seed_phrase=FAUCET_SEED,
+        hrp="lava@",
+        eth=False,
+    )
+else:
+    faucet_account = Account(
+        private_key=FAUCET_PRIVKEY,
+        hrp="lava@",
+        eth=False,
+    )
 
 
 def coins_dict_to_string(coins: dict, table_fmt_: str = "") -> str:
@@ -109,14 +116,15 @@ async def get_node_status(session: aiohttp.ClientSession):
     return await async_request(session, url=url)
 
 
-async def get_transaction_info(session: aiohttp.ClientSession, trans_id_hex: str):
+async def get_transaction_info(session: aiohttp.ClientSession, trans_id_hex: str, wait=BLOCK_TIME_SECONDS):
     """
 
+    :param wait:
     :param session:
     :param trans_id_hex:
     :return:
     """
-    time.sleep(BLOCK_TIME_SECONDS)
+    time.sleep(wait)
     url = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs/{trans_id_hex}'
 
     resp = await async_request(session, url=url)
@@ -137,7 +145,7 @@ async def send_tx(session: aiohttp.ClientSession, recipient: str, amount: int) -
         transaction = Transaction(
             account=faucet_account,
             gas=GAS_LIMIT,
-            memo=f"Faucet transfer at {time.time()}",
+            memo=f"Faucet transfer {time.time()}",
             chain_id=CHAIN_ID,
         )
 
