@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import sys
 import time
@@ -12,15 +13,15 @@ from config import VERBOSE_MODE, REST_PROVIDER, FAUCET_SEED, MAIN_DENOM, RPC_PRO
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-if FAUCET_SEED:
+if FAUCET_PRIVKEY:
     faucet_account = Account(
-        seed_phrase=FAUCET_SEED,
+        private_key=FAUCET_PRIVKEY,
         hrp="lava@",
         eth=False,
     )
 else:
     faucet_account = Account(
-        private_key=FAUCET_PRIVKEY,
+        seed_phrase=FAUCET_SEED,
         hrp="lava@",
         eth=False,
     )
@@ -124,7 +125,7 @@ async def get_transaction_info(session: aiohttp.ClientSession, trans_id_hex: str
     :param trans_id_hex:
     :return:
     """
-    time.sleep(wait)
+    await asyncio.sleep(wait)
     url = f'{REST_PROVIDER}/cosmos/tx/v1beta1/txs/{trans_id_hex}'
 
     resp = await async_request(session, url=url)
