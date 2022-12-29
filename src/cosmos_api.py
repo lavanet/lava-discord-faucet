@@ -7,13 +7,13 @@ from tabulate import tabulate
 from mospy import Transaction, Account
 from mospy.clients import HTTPClient
 from config import VERBOSE_MODE, REST_PROVIDER, FAUCET_SEED, MAIN_DENOM, RPC_PROVIDER, GAS_LIMIT, CHAIN_ID, GAS_PRICE, \
-    FAUCET_ADDRESS, DECIMAL, BLOCK_TIME_SECONDS
+    FAUCET_ADDRESS, DECIMAL, BLOCK_TIME_SECONDS, FAUCET_PRIVKEY
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 faucet_account = Account(
-    seed_phrase=FAUCET_SEED,
+    private_key=FAUCET_PRIVKEY,
     hrp="lava@",
     eth=False,
 )

@@ -25,8 +25,8 @@ bot = commands.Bot(intents=intents,
                    command_prefix="$",
                    description='Funded by the community for the community')
 
-with open("../help-msg.txt", "r", encoding="utf-8") as help_file:
-    help_msg = help_file.read()
+# with open("../help-msg.txt", "r", encoding="utf-8") as help_file:
+#     help_msg = help_file.read()
 
 
 async def save_transaction_statistics(some_string: str):
@@ -85,6 +85,7 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, tra
     except Exception:
         logger.exception("Can't get transaction info")
         await message.channel.send(f"Can't get transaction info of your request {message.content}")
+        await session.close()
 
 
 async def requester_basic_requirements(session, ctx, address, amount):
@@ -97,7 +98,7 @@ async def requester_basic_requirements(session, ctx, address, amount):
         )
         return False
 
-    # check if requester holds already evmos
+    # check if requester holds already Lava
     requester_balance = float(await api.get_addr_balance(session, address))
     if requester_balance > float(amount):
         await ctx.send(
@@ -158,6 +159,7 @@ async def faucet_address(ctx):
         await session.close()
     except Exception:
         logging.exception("Can't send message $faucet_address. Please report the incident to one of the mods.")
+        await session.close()
 
 
 @bot.command(name='balance')
@@ -175,7 +177,7 @@ async def balance(ctx):
 
         else:
             await ctx.channel.send(
-                f'{ctx.author.mention} your account is not initialized with evmos (balance is empty)')
+                f'{ctx.author.mention} your account is not initialized with Lava (balance is empty)')
             await session.close()
 
 
@@ -205,6 +207,7 @@ async def status(ctx):
             await session.close()
     except Exception:
         logger.exception("Exception occurred during faucet status request")
+        await session.close()
 
 
 @bot.command(name='tx_info')
