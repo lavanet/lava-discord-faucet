@@ -78,7 +78,7 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, tra
                  f'From:         {from_}\n' \
                  f'To (BECH32):  {to_}\n' \
                  f'Amount:       {amount_} ulava ```' \
-                 f'{EXPLORER_URL}/{txhash}'
+                 f'{EXPLORER_URL}/transactions/{txhash}'
             await message.channel.send(tx)
             await session.close()
         else:
