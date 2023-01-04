@@ -6,7 +6,8 @@ import aiohttp
 import aiofiles
 from discord.ext import commands
 from config import TOKEN, AMOUNT_TO_SEND, REQUEST_TIMEOUT, FAUCET_ADDRESS, \
-    FAUCET_EMOJI, REJECT_EMOJI, BECH32_HRP, EXPLORER_URL, BLOCK_TIME_SECONDS
+    FAUCET_EMOJI, REJECT_EMOJI, BECH32_HRP, EXPLORER_URL, BLOCK_TIME_SECONDS, \
+    FAUCET_REQUESTS_COUNT_PER_USER
 import cosmos_api as api
 
 # Turn Down Discord Logging
@@ -242,7 +243,7 @@ async def tx_info(ctx):
     await submit_tx_info(session, ctx.message, ctx.author.mention)
 
 
-@commands.cooldown(2, REQUEST_TIMEOUT, commands.BucketType.user)
+@commands.cooldown(FAUCET_REQUESTS_COUNT_PER_USER, REQUEST_TIMEOUT, commands.BucketType.user)
 @bot.command(name='request')
 async def request(ctx):
     logger.info("Request command start")
