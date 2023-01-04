@@ -78,7 +78,7 @@ async def submit_tx_info(session: aiohttp.ClientSession, message, requester, tra
                  f'From:         {from_}\n' \
                  f'To (BECH32):  {to_}\n' \
                  f'Amount:       {amount_} ulava ```' \
-                 f'{EXPLORER_URL}/txs/{txhash}'
+                 f'{EXPLORER_URL}/{txhash}'
             await message.channel.send(tx)
             await session.close()
         else:
@@ -242,7 +242,7 @@ async def tx_info(ctx):
     await submit_tx_info(session, ctx.message, ctx.author.mention)
 
 
-#@commands.cooldown(2, REQUEST_TIMEOUT, commands.BucketType.user)
+@commands.cooldown(2, REQUEST_TIMEOUT, commands.BucketType.user)
 @bot.command(name='request')
 async def request(ctx):
     logger.info("Request command start")
